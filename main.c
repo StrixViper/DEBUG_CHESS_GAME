@@ -4,167 +4,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <ctype.h>
-
-#define MAX_MOVES 150 // a macro for the past moves the player made
-
-#define BOARD_SIZE 8
-
-typedef struct // struct for the Piece of every soldier
-{
-    char type;
-    char color;
-    int x,y;
-    bool hasMoved;
-} Piece;
-
-typedef struct // strcut for the player details
-{
-    char color;
-    bool isInCheck;
-    bool isLost;
-    time_t timeLeft; //store the time IN SECONDS (600 seconds max ----- >0 min)
-    time_t startTime; //store the time the player has started playing
-    int kingX;
-    int kingY;
-
-} Player;
-
-typedef struct // struct for the chess board
-{
-    Piece* board[8][8];
-} Board;
-
-typedef struct // struct for every move
-{
-    int startX, startY; // Starting coordinates of the piece
-    int endX, endY;     // Ending coordinates of the piece
-    char pieceMoved;    // The type of piece that was moved (e.g., 'K' for King)
-    char pieceCaptured; // The type of piece that was captured, if any (e.g., 'P' for Pawn)
-    bool isCastlingMove; // To indicate if this move was a castling move
-    bool isEnPassant;    // To indicate if this move was an en passant
-    bool isPromotion;    // To indicate if this move was a pawn promotion
-    int playerWhoMadeTheMove;
-    char move[100];
-    struct Move *next;
-} Move;
-
-typedef struct
-{
-    Board* board;
-    Player* players[2];
-    int currentPlayer; // 0 for Player 1, 1 for Player 2
-    int moveCount;
-    Move moveHistory[MAX_MOVES];
-} Game;
-
-
-
-bool isGameOver = false; // a variable that hold if the game is over or not
-
-
-//##########################-----INITIALIZATION FUNCTIONS---------############################
-
-void InitializeBoard(Board *board); //Set up the initial positions of pieces on the board.
-
-void InitializePlayers(Player *player1, Player *player2); //Initialize player-specific settings.
-
-void placePiece(int x, int y, char type, char color);
-
-void UpdateTimeLeft(Player *player); //function to update how much time the player has left
-
-//##########################-----END OF INITIALIZATION FUNCTIONS---------############################
-
-
-
-//##########################-----MOVEMENT AND RULES FUNCTIONS---------############################
-
-bool IsInCheck(Board *board, Player *player); //Determines if a player's king is in check.
-
-bool IsCheckmate(Board *board,Player *player); //Determines if a player is in checkmate.
-
-bool IsPlayerWin(Board *board, Player *player1 , Player *player2); //Determines if a player is won
-
-bool IsGameOver(Board *board, Player *player1 , Player *player2); //Determines if a player is won
-
-bool PerformMove(Game* game, const char* moveInput); // Function to perform a move based on user input (e.g., "E2-E4")
-
-bool IsLegalMove(Board *board, int startX, int startY, int endX, int endY, Player *player); //function that check if the move the player want to perform is vsalid
-
-bool IsKingCaptured(Board *board, Player *player);
-
-
-// Function to handle the movement of the King
-// The King can move one square in any direction (horizontally, vertically, or diagonally)
-// The function should check if the move is valid, ensure the destination square is not occupied by a piece of the same color,
-// and handle special rules like castling.
-bool MoveKing(Board *board, int startX, int startY, int endX, int endY, Player *player);
-
-// Function to handle the movement of the Queen
-// The Queen can move any number of squares along a rank, file, or diagonal
-// The function should ensure there are no pieces blocking the path and that the destination square is valid.
-bool MoveQueen(Board *board, int startX, int startY, int endX, int endY, Player *player);
-
-// Function to handle the movement of the Rook
-// The Rook can move any number of squares along a rank or file
-// The function should ensure the path is clear and validate the destination square.
-// It should also account for castling rights.
-bool MoveRook(Board *board, int startX, int startY, int endX, int endY, Player *player);
-
-// Function to handle the movement of the Bishop
-// The Bishop can move any number of squares diagonally
-// The function should check if the path is clear and validate the destination square.
-bool MoveBishop(Board *board, int startX, int startY, int endX, int endY, Player *player);
-
-// Function to handle the movement of the Knight
-// The Knight moves in an "L" shape: two squares in one direction and then one square perpendicular, or vice versa
-// The function should validate the unique movement pattern and check if the destination square is valid.
-bool MoveKnight(Board *board, int startX, int startY, int endX, int endY, Player *player);
-
-// Function to handle the movement of the Pawn
-// Pawns move forward one square, but capture diagonally. They can also move two squares forward from their starting position
-// The function should validate normal moves, captures, en passant, and promotion.
-bool MovePawn(Board *board, int startX, int startY, int endX, int endY, Player *player);
-
-
-//##########################-----END OF MOVEMENT AND RULES FUNCTIONS---------############################
-
-
-
-//##########################-----GAME FLOW FUNCTIONS---------############################
-
-void PrintBoard(Board *board , Game *game); //Print the current state of the board for debugging or gameplay.
-
-void SwitchPlayer(Game *game); //Switch the current player after a successful move.
-
-void HandleCastling(Board *board, Player *player);//Handle castling rules and logic.
-
-void HandlePawnPromotion(Board *board, int x, int y); //Handle the promotion of pawns when they reach the opposite side of the board.
-
-void RedoMove(Board *board, Move *move, Player *player, Player *opponent); // Redo a move
-
-void UndoMove(Board *board, Move *move, Player *player, Player *opponent); // Undo a move
-
-void StoreMove(Game *game, Move *move); // function to save the past moves and print on the scrint
-
-void DisplayMoveHistory(Game *game, int n); // function to display the last n moves for the history
-
-void saveGameHistory(Game *game); //function to save all the moves that was on the game
-
-void uploadGame(FILE *gamefile, char filename); //function that you could upload a game you had and then see it later
-
-//##########################-----END OF GAME FLOW FUNCTIONS---------############################
-
-
-
-//##########################-----UTILITY FUNCTIONS---------############################
-
-const char* GetPieceSymbol(Piece *piece); //Return a character symbol for the piece (e.g., 'K' for king, 'Q' for queen).
-
-bool IsMoveWithinBounds(int startX, int startY,int endX,int endY); //Check if the given coordinates are within the board limits.
-
-void ConvertAlgebraicToIndices(const char* position, int* x, int* y); // Function to convert algebraic notation (e.g., "E2") to board indices (e.g., (6, 4))
-
-//##########################-----END OF UTILITY FUNCTIONS---------############################
+#include "chess.h"
 
 
 void ClearConsole() {
@@ -173,6 +13,15 @@ void ClearConsole() {
     #else
         system("clear"); // For Linux and macOS
     #endif
+}
+
+// Define min and max functions
+int min(int a, int b) {
+    return (a < b) ? a : b;
+}
+
+int max(int a, int b) {
+    return (a > b) ? a : b;
 }
 
 
@@ -186,18 +35,21 @@ void FreeBoard(Board *board); //Free any dynamically allocated memory for the bo
 int main() {
     setlocale(LC_CTYPE, "");
 
+    // Initialize game components
     Board board;
     Player player1, player2;
     Game game;
+    bool isGameOver = false;
 
+    // Initialize the board and players
     InitializeBoard(&board);
     InitializePlayers(&player1, &player2);
 
     game.board = &board;
     game.players[0] = &player1;
     game.players[1] = &player2;
-    game.currentPlayer = 0; // Assuming White starts
-    game.moveCount = 0;     // Initialize moveCount
+    game.currentPlayer = 0; // Player 1 (White) starts
+    game.moveCount = 0;     // Initialize move count
 
     // Print the initial board state
     PrintBoard(&board, &game);
@@ -205,63 +57,51 @@ int main() {
     // Main game loop
     while (!isGameOver) {
         Player *currentPlayer = game.players[game.currentPlayer];
-        Player *opponentPlayer = game.players[1 - game.currentPlayer]; // Get the opponent player
+        Player *opponentPlayer = game.players[1 - game.currentPlayer]; // Determine opponent player
         char moveInput[6];
 
         // Record the start time for the current player
         currentPlayer->startTime = time(NULL);
 
-        printf("\n\n\nPlayer %d, enter your move (e.g., E2-E4): ", game.currentPlayer + 1);
+        // Get player move input
+        printf("\n\nPlayer %d (%c), enter your move (e.g., E2-E4): ", game.currentPlayer + 1, currentPlayer->color);
         scanf("%s", moveInput);
 
+        // Perform the move
         if (PerformMove(&game, moveInput)) {
-            // Update time for the current player
+            // Update time left for the current player
             UpdateTimeLeft(currentPlayer);
 
+            // Check if the opponent is in check after the move
+            if (isCheck(game.board, opponentPlayer))
+                    printf("Player %d is in check!\n", 1 - game.currentPlayer + 1);
 
-            // Check if the current player's move has put the opponent in check
-            if (IsInCheck(&board, opponentPlayer)) {
-                opponentPlayer->isInCheck = true;
-                printf("Player %d is in check!\n", 1 - game.currentPlayer + 1);
-
-                // Check for checkmate
-                if (IsCheckmate(&board, opponentPlayer)) {
-                    printf("Checkmate! Player %d wins!\n", game.currentPlayer + 1);
+                // Check if the opponent is in checkmate
+                if (isCheckmate(game.board, opponentPlayer))
+                {
+                    printf("Player %d is in checkmate. Player %d wins!\n", 1 - game.currentPlayer + 1, game.currentPlayer + 1);
                     isGameOver = true;
                 }
-            }
-            else {
-                opponentPlayer->isInCheck = false;
-            }
 
 
-
-
-            if(IsKingCaptured(&board,opponentPlayer))
-            {
-                printf("Player: %d has Win the game due to capture the opponent king",currentPlayer->color);
-            }
-
-
-            // Check if game is over due to time constraints or other conditions
+            // Check if the game is over due to time constraints
             if (currentPlayer->isLost) {
                 printf("Player %d has run out of time. Player %d wins!\n", game.currentPlayer + 1, 1 - game.currentPlayer + 1);
                 isGameOver = true;
             }
 
-            PrintBoard(&board, &game);
-
+            // If no one has won yet, switch to the other player
             if (!isGameOver) {
-                // Switch the player for the next turn
-                SwitchPlayer(&game);
+                SwitchPlayer(&game); // Switch turns
+                PrintBoard(&board, &game); // Print updated board after the move
             }
+        } else {
+            printf("Invalid move, please try again.\n");
         }
     }
 
     return 0;
 }
-
-
 
 
 void ConvertAlgebraicToIndices(const char* position, int* x, int* y) {
@@ -383,14 +223,22 @@ void InitializePlayers(Player *player1, Player *player2) {
     player1->color = 'W'; // White
     player1->isInCheck = false;
     player1->isLost = false;
+    player1->hasMovedKing = false;
+    player1->hasMovedRook = false;
     player1->timeLeft = 600; // 10 minutes
     player1->startTime = time(NULL); // Set the start time
+    player1->kingX = 0;  // White king starts at row 0
+    player1->kingY = 4;  // White king starts at column 4
 
     player2->color = 'B'; // Black
     player2->isInCheck = false;
     player2->isLost = false;
+    player2->hasMovedKing = false;
+    player2->hasMovedRook = false;
     player2->timeLeft = 600; // 10 minutes
     player2->startTime = time(NULL); // Set the start time
+    player2->kingX = 7;  // Black king starts at row 7
+    player2->kingY = 4;  // Black king starts at column 4
 }
 
 void UpdateTimeLeft(Player *player) {
@@ -422,22 +270,43 @@ bool MoveKing(Board *board, int startX, int startY, int endX, int endY, Player *
     int dx = abs(endX - startX);
     int dy = abs(endY - startY);
 
-    if (dx <= 1 && dy <= 1) { // King can move one square in any direction
+    // Handle normal king move
+    if (dx <= 1 && dy <= 1) {
         Piece *destination = board->board[endX][endY];
         if (destination == NULL || destination->color != player->color) {
             // Update king's position in the Player struct
             player->kingX = endX;
             player->kingY = endY;
 
-            // Move the piece on the board
-            board->board[endX][endY] = board->board[startX][startY];
-            board->board[startX][startY] = NULL;
-            board->board[endX][endY]->x = endX;
-            board->board[endX][endY]->y = endY;
+            // Set the hasMovedKing flag
+            player->hasMovedKing = true;
 
             return true;
         }
     }
+    // Handle castling move
+    else if (startX == endX && (endY == startY + 2 || endY == startY - 2)) {
+        // Castling is only allowed if the king and rook have not moved before
+        if (!player->hasMovedKing && !player->hasMovedRook &&
+            startY == 4 && (endY == 2 || endY == 6)) {
+            int rookX = startX;
+            int rookY = (endY == 2) ? 0 : 7; // rook's starting position
+
+            // Check if there are no pieces between the king and the rook
+            for (int y = min(startY, endY) + 1; y < max(startY, endY); ++y) {
+                if (board->board[startX][y] != NULL) {
+                    return false;
+                }
+            }
+
+            // Update player states
+            player->hasMovedKing = true;
+            player->hasMovedRook = true;
+
+            return true;
+        }
+    }
+
     return false;
 }
 
@@ -474,6 +343,7 @@ bool MoveRook(Board *board, int startX, int startY, int endX, int endY, Player *
         }
         Piece *destination = board->board[endX][endY];
         if (destination == NULL || destination->color != player->color) {
+            player->hasMovedRook = true;
             return true;
         }
     }
@@ -572,11 +442,7 @@ bool PerformMove(Game* game, const char* moveInput) {
     bool isValidMove = false;
     switch (toupper(movingPiece->type)) {
         case 'K':
-            isValidMove = MoveKing(board, startX, startY, endX, endY, currentPlayer);
-            if (isValidMove) {
-                currentPlayer->kingX = endX; // Update king position
-                currentPlayer->kingY = endY;
-            }
+            isValidMove =  MoveKing(board, startX, startY, endX, endY, currentPlayer);
             break;
         case 'Q':
             isValidMove = MoveQueen(board, startX, startY, endX, endY, currentPlayer);
@@ -622,6 +488,8 @@ bool PerformMove(Game* game, const char* moveInput) {
     // Store the move
     Move move = {startX, startY, endX, endY, movingPiece->type, capturedPiece ? capturedPiece->type : 0, false, false, false, game->currentPlayer};
     StoreMove(game, &move);
+
+
 
     return true;
 }
@@ -697,60 +565,6 @@ bool IsLegalMove(Board *board, int startX, int startY, int endX, int endY, Playe
     return false; // Default case, should never reach here
 }
 
-bool IsInCheck(Board *board, Player *player) {
-    // Assuming we have a function to check if a specific position is under attack
-    for (int i = 0; i < BOARD_SIZE; i++) {
-        for (int j = 0; j < BOARD_SIZE; j++) {
-            Piece *piece = board->board[i][j];
-            if (piece != NULL && piece->color != player->color) {
-                // Check if this piece can attack the player's king
-                if (IsLegalMove(board, i, j, player->kingX, player->kingY, player)) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
-bool IsCheckmate(Board *board, Player *player) {
-    if (!IsInCheck(board, player)) {
-        return false;
-    }
-    // Iterate over all possible moves to see if any move can escape the check
-    for (int x = 0; x < BOARD_SIZE; x++) {
-        for (int y = 0; y < BOARD_SIZE; y++) {
-            // Try moving each piece to see if it can escape check
-            Piece *piece = board->board[x][y];
-            if (piece != NULL && piece->color == player->color) {
-                // Generate all possible moves for this piece
-                // This is a simplified version; you need to generate all valid moves
-                // and see if any move would get the king out of check
-                for (int newX = 0; newX < BOARD_SIZE; newX++) {
-                    for (int newY = 0; newY < BOARD_SIZE; newY++) {
-                        if (IsLegalMove(board, x, y, newX, newY, player)) {
-                            // Temporarily make the move and check if it resolves the check
-                            Piece *originalPiece = board->board[newX][newY];
-                            board->board[newX][newY] = board->board[x][y];
-                            board->board[x][y] = NULL;
-                            if (!IsInCheck(board, player)) {
-                                // Undo the move
-                                board->board[x][y] = board->board[newX][newY];
-                                board->board[newX][newY] = originalPiece;
-                                return false;
-                            }
-                            // Undo the move
-                            board->board[x][y] = board->board[newX][newY];
-                            board->board[newX][newY] = originalPiece;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return true;
-}
-
 bool IsMoveWithinBounds(int startX, int startY, int endX, int endY) {
     // Check if the starting and ending positions are within bounds of the chessboard
     return (startX >= 0 && startX < BOARD_SIZE) &&
@@ -759,19 +573,173 @@ bool IsMoveWithinBounds(int startX, int startY, int endX, int endY) {
            (endY >= 0 && endY < BOARD_SIZE);
 }
 
-bool IsKingCaptured(Board *board, Player *player) {
-    // Check if the player's king is still on the board
+void HandleCastling(Board *board, Player *player, bool isKingside) {
+    int row = (player->color == 'W') ? 0 : 7;
+    int kingStartCol = (isKingside) ? 4 : 4;
+    int kingEndCol = (isKingside) ? 6 : 2;
+    int rookStartCol = (isKingside) ? 7 : 0;
+    int rookEndCol = (isKingside) ? 5 : 3;
+
+    // Move the king
+    Piece *king = board->board[row][kingStartCol];
+    board->board[row][kingEndCol] = king;
+    board->board[row][kingStartCol] = NULL;
+    king->x = row;
+    king->y = kingEndCol;
+    king->hasMoved = true;
+
+    // Move the rook
+    Piece *rook = board->board[row][rookStartCol];
+    board->board[row][rookEndCol] = rook;
+    board->board[row][rookStartCol] = NULL;
+    rook->x = row;
+    rook->y = rookEndCol;
+    rook->hasMoved = true;
+
+    // Update player king position
+    player->kingX = row;
+    player->kingY = kingEndCol;
+}
+
+bool isCheck(Board *board, Player *currentPlayer) {
+    int kingX = currentPlayer->kingX;
+    int kingY = currentPlayer->kingY;
+    char opponentColor = (currentPlayer->color == 'W') ? 'B' : 'W';
+
+    // Iterate over the board to find the opponent's pieces
     for (int i = 0; i < BOARD_SIZE; i++) {
         for (int j = 0; j < BOARD_SIZE; j++) {
             Piece *piece = board->board[i][j];
-            if (piece != NULL && piece->type == 'K' && piece->color == player->color) {
-                // Found the king on the board
-                return false;
+            if (piece != NULL && piece->color == opponentColor) {
+                // Check if the opponent's piece can attack the king
+                if (CanPieceAttack(piece, kingX, kingY, board, currentPlayer)) {
+                    return true; // King is in check
+                }
             }
         }
     }
-    // King's piece not found, hence captured
+    return false; // King is not in check
+}
+
+bool isCheckmate(Board *board, Player *currentPlayer) {
+
+    int kingX = currentPlayer->kingX;
+    int kingY = currentPlayer->kingY;
+
+    // Directions the king can move: up, down, left, right, and diagonals
+    int directions[8][2] = {
+        {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
+    };
+
+    // Check if the king can escape by moving to a safe position
+    for (int i = 0; i < 8; i++) {
+        int newX = kingX + directions[i][0];
+        int newY = kingY + directions[i][1];
+
+        // Check if the move is within bounds and not blocked by a same-color piece
+        if (newX >= 0 && newX < BOARD_SIZE && newY >= 0 && newY < BOARD_SIZE) {
+            Piece *destination = board->board[newX][newY];
+            if (destination == NULL || destination->color != currentPlayer->color) {
+                // Simulate the move
+                int oldX = kingX;
+                int oldY = kingY;
+                currentPlayer->kingX = newX;
+                currentPlayer->kingY = newY;
+
+                if (!isCheck(board, currentPlayer)) {
+                    // King can escape the check, so it's not checkmate
+                    currentPlayer->kingX = oldX;
+                    currentPlayer->kingY = oldY;
+                    return false;
+                }
+
+                // Undo the move
+                currentPlayer->kingX = oldX;
+                currentPlayer->kingY = oldY;
+            }
+        }
+    }
+
+    // Check if any other piece can block the check or capture the attacking piece
+    for (int i = 0; i < BOARD_SIZE; i++) {
+        for (int j = 0; j < BOARD_SIZE; j++) {
+            Piece *piece = board->board[i][j];
+            if (piece != NULL && piece->color == currentPlayer->color && piece->type != 'K') {  // Exclude the king
+                // Try moving the piece to all possible squares on the board
+                for (int x = 0; x < BOARD_SIZE; x++) {
+                    for (int y = 0; y < BOARD_SIZE; y++) {
+                        Piece *destination = board->board[x][y];
+                        // Check if the piece can move to the destination and is not blocked by a same-color piece
+                        if (destination == NULL || destination->color != currentPlayer->color) {
+                            if (CanPieceAttack(piece, x, y, board,currentPlayer)) {
+                                // Simulate the move
+                                int originalX = piece->x;
+                                int originalY = piece->y;
+                                board->board[originalX][originalY] = NULL;
+                                board->board[x][y] = piece;
+                                piece->x = x;
+                                piece->y = y;
+
+                                if (!isCheck(board, currentPlayer)) {
+                                    // The check can be blocked or the attacking piece can be captured
+                                    board->board[originalX][originalY] = piece;
+                                    board->board[x][y] = destination;
+                                    piece->x = originalX;
+                                    piece->y = originalY;
+                                    return false;
+                                }
+
+                                // Undo the move
+                                board->board[originalX][originalY] = piece;
+                                board->board[x][y] = destination;
+                                piece->x = originalX;
+                                piece->y = originalY;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // If we reach here, the king is in check and no other piece can block the check or capture the attacking piece
     return true;
 }
+
+bool CanPieceAttack(Piece *piece, int targetX, int targetY, Board *board, Player *currentPlayer) {
+    // Implement movement rules for each piece type (King, Queen, Bishop, Knight, Rook, Pawn)
+    // For example, check if the piece can move to (targetX, targetY)
+    // Return true if the piece can attack the given coordinates
+
+    bool isValidMove = false;
+
+    // Ensure we're using the piece->type for switch case
+    switch (toupper(piece->type)) {
+        case 'K':
+            isValidMove = MoveKing(board, piece->x, piece->y, targetX, targetY, currentPlayer);
+            break;
+        case 'Q':
+            isValidMove = MoveQueen(board, piece->x, piece->y, targetX, targetY, currentPlayer);
+            break;
+        case 'R':
+            isValidMove = MoveRook(board, piece->x, piece->y, targetX, targetY, currentPlayer);
+            break;
+        case 'B':
+            isValidMove = MoveBishop(board, piece->x, piece->y, targetX, targetY, currentPlayer);
+            break;
+        case 'N':
+            isValidMove = MoveKnight(board, piece->x, piece->y, targetX, targetY, currentPlayer);
+            break;
+        case 'P':
+            isValidMove = MovePawn(board, piece->x, piece->y, targetX, targetY, currentPlayer);
+            break;
+        default:
+            // Handle unexpected piece types, possibly an error
+            break;
+    }
+
+    return isValidMove;
+}
+
 
 
